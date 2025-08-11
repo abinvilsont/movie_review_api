@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -10,7 +10,7 @@ const splitGenres = (genres?: string) =>
   genres ? genres.split(",").map((g) => g.trim()) : [];
 
 // Add a new movie
-app.post("/movies", async (req, res) => {
+app.post("/movies", async (req: Request, res: Response) => {
   const { title, year, genres } = req.body;
   if (!title) return res.status(400).json({ error: "title is required" });
 
@@ -27,7 +27,7 @@ app.post("/movies", async (req, res) => {
 });
 
 // Get movie details
-app.get("/movies/:id", async (req, res) => {
+app.get("/movies/:id", async (req: Request, res: Response) => {
   const movie = await prisma.movie.findUnique({
     where: { id: Number(req.params.id) },
     include: { reviews: true },
@@ -52,7 +52,7 @@ app.get("/movies/:id", async (req, res) => {
 });
 
 // Submit a review
-app.post("/movies/:id/reviews", async (req, res) => {
+app.post("/movies/:id/reviews", async (req: Request, res: Response) => {
   const movieId = Number(req.params.id);
   const { rating, comment } = req.body;
   if (rating == null) return res.status(400).json({ error: "rating required" });
@@ -70,7 +70,7 @@ app.post("/movies/:id/reviews", async (req, res) => {
 });
 
 // Get average rating
-app.get("/movies/:id/rating", async (req, res) => {
+app.get("/movies/:id/rating", async (req: Request, res: Response) => {
   const movieId = Number(req.params.id);
   const reviews = await prisma.review.findMany({ where: { movieId } });
   if (!reviews.length)
@@ -83,7 +83,7 @@ app.get("/movies/:id/rating", async (req, res) => {
 });
 
 // Top-rated movies
-app.get("/movies/top", async (req, res) => {
+app.get("/movies/top", async (req: Request, res: Response) => {
   const limit = Number(req.query.limit) || 10;
   const minReviews = Number(req.query.min_reviews) || 0;
 
@@ -101,7 +101,11 @@ app.get("/movies/top", async (req, res) => {
       return { ...m, average_rating: avg, reviews_count: count };
     })
     .filter((m) => m.average_rating !== null && m.reviews_count >= minReviews)
-    .sort((a, b) => (b.average_rating! - a.average_rating!) || (b.reviews_count - a.reviews_count))
+    .sort(
+      (a, b) =>
+        b.average_rating! - a.average_rating! ||
+        b.reviews_count - a.reviews_count
+    )
     .slice(0, limit);
 
   res.json(ranked);
